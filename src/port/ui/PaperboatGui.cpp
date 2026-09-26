@@ -13,6 +13,7 @@
 #include "PaperboatInputEditorWindow.h"
 #include "PaperboatModMenuWindow.h"
 #include "TouchControls.h"
+#include "SunPositionEditor.h"
 #include "port/ui/devtools/hooks/EventDebugger.h"
 #include <ship/window/gui/ConsoleWindow.h>
 #include "port/ui/devtools/valueviewer/ValueViewer.h"
@@ -34,6 +35,7 @@ std::shared_ptr<ValueViewerSettingsWindow> mValueViewerSettingsWindow;
 std::shared_ptr<SaveEditorWindow> mSaveEditorWindow;
 std::shared_ptr<PaperboatModMenuWindow> mModMenuWindow;
 std::shared_ptr<TouchControlsOverlay> mTouchControlsOverlay;
+std::shared_ptr<SunPositionEditor> mSunPositionEditor;
 
 UIWidgets::Colors GetMenuThemeColor() {
     return mPaperboatMenu->GetMenuThemeColor();
@@ -101,6 +103,9 @@ void SetupGuiElements() {
     mTouchControlsOverlay = std::make_shared<TouchControlsOverlay>(CVAR_WINDOW("TouchControls"), "##TouchControls");
     gui->AddGuiWindow(mTouchControlsOverlay);
     mTouchControlsOverlay->Show();
+
+    mSunPositionEditor = std::make_shared<SunPositionEditor>();
+    gui->AddGuiWindow(mSunPositionEditor);
 }
 
 void Destroy() {
@@ -120,6 +125,7 @@ void Destroy() {
     mSaveEditorWindow = nullptr;
     mModMenuWindow = nullptr;
     mTouchControlsOverlay = nullptr;
+    mSunPositionEditor = nullptr;
 }
 
 void RegisterPopup(
