@@ -1,4 +1,5 @@
 #include "PaperboatMenu.h"
+#include "port/enhancements/graphics/ShaderTestLab.h"
 
 namespace PaperboatGui {
 
@@ -101,6 +102,68 @@ void PaperboatMenu::AddMenuEnhancements() {
         .Options(
             CheckboxOptions().Tooltip("Flips the battle projector reel to appear rounded for widescreen resolutions.")
         );
+
+    path = { "Enhancements", "Advanced Graphics", SECTION_COLUMN_1 };
+    AddSidebarEntry("Enhancements", path.sidebarName, 1);
+    AddWidget(path, "Shader Test Lab (Experimental)", WIDGET_SEPARATOR_TEXT);
+    AddWidget(path, "Configuration only; no god rays or lighting changes.", WIDGET_TEXT);
+    AddWidget(path, "Enable Shader Test Lab", WIDGET_CVAR_CHECKBOX).CVar(ShaderTestLab::Enabled);
+
+    auto requireLab = [](WidgetInfo& info) {
+        info.options->disabled = !CVarGetInteger(ShaderTestLab::Enabled, 0);
+        info.options->disabledTooltip = "Enable Shader Test Lab first.";
+    };
+    auto requireEditing = [](WidgetInfo& info) {
+        info.options->disabled = !CVarGetInteger(ShaderTestLab::Enabled, 0) || CVarGetInteger(ShaderTestLab::Locked, 1);
+        info.options->disabledTooltip = "Enable Shader Test Lab and unlock editing first.";
+    };
+    AddWidget(path, "Enable Fake Sun", WIDGET_CVAR_CHECKBOX).CVar(ShaderTestLab::FakeSunEnabled).PreFunc(requireLab);
+    AddWidget(path, "Show Sun Position Editor", WIDGET_CVAR_CHECKBOX)
+        .CVar(ShaderTestLab::ShowEditor)
+        .PreFunc(requireLab);
+    AddWidget(path, "Lock editing", WIDGET_CVAR_CHECKBOX)
+        .CVar(ShaderTestLab::Locked)
+        .Options(CheckboxOptions().DefaultValue(true))
+        .PreFunc(requireLab);
+    AddWidget(path, "Sun X", WIDGET_CVAR_SLIDER_FLOAT)
+        .CVar(ShaderTestLab::SunX)
+        .Options(FloatSliderOptions().Min(-1.0f).Max(1.0f).DefaultValue(0.0f).Format("%.3f"))
+        .PreFunc(requireEditing);
+    AddWidget(path, "Sun Y", WIDGET_CVAR_SLIDER_FLOAT)
+        .CVar(ShaderTestLab::SunY)
+        .Options(FloatSliderOptions().Min(-1.0f).Max(1.0f).DefaultValue(0.5f).Format("%.3f"))
+        .PreFunc(requireEditing);
+    AddWidget(path, "Sun Elevation", WIDGET_CVAR_SLIDER_FLOAT)
+        .CVar(ShaderTestLab::Elevation)
+        .Options(
+            FloatSliderOptions().Min(0.0f).Max(1.0f).DefaultValue(0.5f).Format("%.3f").Tooltip(
+                "Normalized metadata for future effects, not a world-space height."
+            )
+        )
+        .PreFunc(requireEditing);
+    AddWidget(path, "Sun Intensity", WIDGET_CVAR_SLIDER_FLOAT)
+        .CVar(ShaderTestLab::Intensity)
+        .Options(FloatSliderOptions().Min(0.0f).Max(4.0f).DefaultValue(1.0f).Format("%.2f"))
+        .PreFunc(requireEditing);
+    // The generic color-picker widget does not forward its disabled option.
+    AddWidget(path, "Sun Color", WIDGET_CUSTOM)
+        .CVar(ShaderTestLab::Color)
+        .PreFunc(requireEditing)
+        .CustomFunction([](WidgetInfo& info) {
+            ImGui::BeginDisabled(info.options->disabled);
+            CVarColorPicker(
+                info.name.c_str(), info.cVar, Color_RGBA8 { 255, 230, 153, 255 }, false, ColorPickerResetButton,
+                mPaperboatMenu->GetMenuThemeColor()
+            );
+            ImGui::EndDisabled();
+        });
+    AddWidget(path, "Normalized sun coordinates", WIDGET_CUSTOM).CustomFunction([](WidgetInfo&) {
+        const auto sun = ShaderTestLab::GetFakeSunState();
+        ImGui::Text("Normalized: X %.3f / Y %.3f", sun.normalizedPosition.x, sun.normalizedPosition.y);
+    });
+    AddWidget(path, "Reset to defaults", WIDGET_BUTTON)
+        .Callback([](WidgetInfo&) { ShaderTestLab::ResetToDefaults(); })
+        .PreFunc(requireEditing);
 }
 
 } // namespace PaperboatGui
